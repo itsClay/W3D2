@@ -51,11 +51,25 @@ class QuestionFollow
     questions.map {|q| Question.new(q) }
   end
 
+  def self.most_followed_questions(n)
+    questions = QuestionsDatabase.instance.execute(<<-SQL, n)
+      SELECT q.id, q.title, q.body, q.author_id
+      FROM question_follows
+      JOIN questions as q
+        ON question_follows.question_id = q.id
+      GROUP BY question_id
+      ORDER BY COUNT(user_id) DESC
+      LIMIT ?
+    SQL
+    raise 'not one question has been followed!' if questions.empty?
+    questions.map {|q| Question.new(q) }
+  end
+
   def create
     raise '#{self} is already a follow!' if @id
     QuestionsDatabase.instance.execute(<<-SQL, @user_id, @question_id)
-      INSERT INTO replies(user_id, question_id)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO question_follows(user_id, question_id)
+      VALUES (?, ?)
     SQL
     @id = QuestionsDatabase.instance.last_insert_row_id
   end

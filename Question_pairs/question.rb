@@ -1,5 +1,6 @@
 require_relative 'questions_db.rb'
 require_relative 'questionfollow'
+require_relative 'questionlike'
 
 class Question
   attr_accessor :title, :body, :author_id
@@ -38,6 +39,10 @@ class Question
     question.map {|q| Question.new(q) }
   end
 
+  def self.most_followed(n)
+    QuestionFollow.most_followed_questions(n)
+  end
+
   def author
     name = QuestionsDatabase.instance.execute(<<-SQL, @author_id)
       SELECT *
@@ -54,6 +59,18 @@ class Question
 
   def followers
     QuestionFollow.followers_for_question_id(@id)
+  end
+
+  def likers
+    QuestionLike.likers_for_question_id(@id)
+  end
+
+  def num_likes
+    QuestionLike.num_likes_for_question_id(@id)
+  end
+
+  def self.most_liked(n)
+    QuestionLike.most_liked_questions(n)
   end
 
   def create

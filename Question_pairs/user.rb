@@ -2,6 +2,7 @@ require_relative 'questions_db'
 require_relative 'question'
 require_relative 'reply'
 require_relative 'questionfollow'
+require_relative 'questionlikes'
 
 
 class User
@@ -41,6 +42,23 @@ class User
     user.map {|person| User.new(person) }
   end
 
+  def average_karma
+    karma = QuestionsDatabase.instance.execute(<<-SQL, @id)
+    SELECT AVG(likes_per_q.num_likes)
+    FROM (
+      SELECT *, COUNT(question_id) AS num_likes
+      FROM questions
+      JOIN question_likes
+      ON question_likes.question_id = questions.id
+      WHERE author_id = ?
+      GROUP BY author_id
+    ) AS likes_per_q
+    GROUP BY author_id;
+
+    SQL
+    karma.first.values.first
+  end
+
   def authored_questions
     Question.find_by_author_id(@id)
   end
@@ -51,6 +69,10 @@ class User
 
   def followed_questions
     QuestionFollow.followed_questions_for_user_id(@id)
+  end
+
+  def liked_questions
+    QuestionLike.num_likes_for_question_id(@id)
   end
 
   def create
